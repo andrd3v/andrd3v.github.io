@@ -166,6 +166,65 @@
       font-size: 0.85rem;
       color: #999;
     }
+
+    @media (max-width: 600px) {
+      body { padding: 1.5rem 0.75rem; }
+
+      article h1 { font-size: 1.3rem; }
+      article h2 { font-size: 1.15rem; margin-top: 2rem; }
+      article h3 { font-size: 1rem; }
+
+      article pre {
+        padding: 1rem;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+        border-radius: 4px;
+      }
+
+      article pre code { font-size: 0.7rem; }
+
+      .cert-block {
+        font-size: 0.65rem;
+        padding: 0.75rem;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+        border-radius: 4px;
+      }
+
+      .meta { font-size: 0.8rem; }
+      .note { font-size: 0.85rem; padding: 0.6rem 0.75rem; }
+    }
+
+    @media (max-width: 380px) {
+      body { padding: 1rem 0.5rem; }
+
+      article h1 { font-size: 1.15rem; }
+
+      article pre {
+        padding: 0.75rem;
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+      }
+
+      article pre code { font-size: 0.65rem; }
+
+      .cert-block {
+        font-size: 0.6rem;
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      body { max-width: 820px; font-size: 1.05rem; }
+      article pre code { font-size: 0.85rem; }
+    }
+
+    @media (min-width: 2000px) {
+      body { max-width: 920px; font-size: 1.1rem; }
+      article h1 { font-size: 2rem; }
+      article pre code { font-size: 0.9rem; }
+    }
   </style>
 </head>
 <body>

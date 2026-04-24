@@ -122,6 +122,52 @@
       font-size: 0.85rem;
       color: #999;
     }
+
+    @media (max-width: 600px) {
+      body { padding: 1.5rem 1rem; }
+
+      .profile { flex-wrap: wrap; }
+
+      .profile .quote {
+        width: 100%;
+        margin-left: 0;
+        top: 0;
+        font-size: 0.7rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      header h1 { font-size: 1.3rem; }
+
+      .socials { flex-wrap: wrap; gap: 0.75rem; }
+
+      .articles a { font-size: 1rem; }
+      .articles .summary { font-size: 0.88rem; }
+    }
+
+    @media (max-width: 380px) {
+      body { padding: 1rem 0.75rem; }
+
+      .profile .quote { display: none; }
+
+      header h1 { font-size: 1.15rem; }
+
+      .articles li { padding: 1rem 0; }
+      .articles a { font-size: 0.95rem; }
+      .articles time { font-size: 0.8rem; }
+      .articles .summary { font-size: 0.85rem; }
+    }
+
+    @media (min-width: 1400px) {
+      body { max-width: 800px; font-size: 1.05rem; }
+    }
+
+    @media (min-width: 2000px) {
+      body { max-width: 900px; font-size: 1.1rem; }
+      header h1 { font-size: 1.75rem; }
+      .articles a { font-size: 1.25rem; }
+    }
   </style>
 </head>
 <body>
