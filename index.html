@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>andrd3v</title>
+  <title>Ilya Andr (@andrd3v)</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -25,13 +25,16 @@
       gap: 1rem;
     }
 
+    .profile .info {
+      display: flex;
+      flex-direction: column;
+    }
+
     .profile .quote {
       font-size: 0.8rem;
       color: #aaa;
       font-style: italic;
-      margin-left: 0.5rem;
-      position: relative;
-      top: 3px;
+      margin-top: 0.15rem;
     }
 
     .profile img {
@@ -41,6 +44,7 @@
     }
 
     header h1 { font-size: 1.5rem; font-weight: 600; }
+    header h1 .nick { font-weight: 400; color: #888; }
     header p { color: #666; margin-top: 0.25rem; }
 
     .socials {
@@ -126,12 +130,7 @@
     @media (max-width: 600px) {
       body { padding: 1.5rem 1rem; }
 
-      .profile { flex-wrap: wrap; }
-
       .profile .quote {
-        width: 100%;
-        margin-left: 0;
-        top: 0;
         font-size: 0.7rem;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -174,8 +173,10 @@
   <header>
     <div class="profile">
       <img src="https://github.com/andrd3v.png" alt="andrd3v">
-      <h1>andrd3v</h1>
-      <span class="quote">_You_think_you_can_just_XPC_into_any_process_all_willy_nilly_well_think_again_</span>
+      <div class="info">
+        <h1>Ilya Andr <span class="nick">(@andrd3v)</span></h1>
+        <span class="quote">_You_think_you_can_just_XPC_into_any_process_all_willy_nilly_well_think_again_</span>
+      </div>
     </div>
     <nav class="socials">
       <a href="https://t.me/andrd3v" target="_blank">
@@ -226,7 +227,7 @@
   </main>
 
   <footer>
-    &copy; andrd3v
+    &copy; Ilya Andr
   </footer>
 </body>
 </html>
