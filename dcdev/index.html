@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse Engineering Apple's DeviceCheck — andrd3v</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      color: #1a1a1a;
+      background: #fafafa;
+      line-height: 1.7;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 2rem;
+      color: #888;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .back:hover { color: #1a1a1a; }
+
+    article h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+
+    .meta {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .meta a { color: #555; text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+
+    .repo-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .repo-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    article h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    article h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    article p {
+      margin-bottom: 1rem;
+    }
+
+    article code {
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+      font-size: 0.85em;
+      background: #f0f0f0;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+
+    article pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1.25rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+
+    article pre code {
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      color: inherit;
+      font-size: 0.8rem;
+    }
+
+    .keyword { color: #569cd6; }
+    .type { color: #4ec9b0; }
+    .string { color: #ce9178; }
+    .comment { color: #6a9955; }
+    .number { color: #b5cea8; }
+    .func { color: #dcdcaa; }
+    .directive { color: #c586c0; }
+
+    article ul, article ol {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+
+    article li { margin-bottom: 0.35rem; }
+
+    .note {
+      background: #fff3cd;
+      border-left: 3px solid #ffc107;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.9rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .cert-block {
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+      font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: #555;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .separator {
+      text-align: center;
+      margin: 2rem 0;
+      color: #ccc;
+      font-size: 1.25rem;
+      letter-spacing: 0.5em;
+    }
+
+    .credits {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .credits a { color: #1a1a1a; text-decoration: none; font-weight: 500; }
+    .credits a:hover { text-decoration: underline; }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+      font-size: 0.85rem;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <a href="../" class="back">&larr; andrd3v</a>
+
+  <article>
+    <h1>Reverse Engineering Apple's DeviceCheck Token Generation</h1>
+    <div class="meta">
+      <time datetime="2026-02-23">February 23, 2026</time> &middot;
+      by <a href="https://github.com/andrd3v">andrd3v</a> &middot;
+      <a href="https://github.com/andrd3v/dcdev" target="_blank" class="repo-btn">
+        <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        Repository
+      </a>
+    </div>
+
+    <p>This document presents an end-to-end reverse engineering of Apple's DeviceCheck token generation flow on iOS, starting from the public <code>DCDevice</code> API and following execution through <code>devicecheckd</code>, <code>DeviceCheckInternal.framework</code>, and the underlying cryptographic primitives.</p>
+
+    <p>The goal is to provide a reproducible, engineering-grade description useful for security engineering, red teaming, and low-level reverse engineering work.</p>
+
+    <h2>Chapter 1 &mdash; DeviceCheck.framework entry point</h2>
+
+    <p>When creating a token from <code>DCDevice</code>, the method <code>-[DCDevice generateTokenWithCompletionHandler:]</code> is used &mdash; inside it calls <code>DCDeviceMetadataDaemonConnection</code>. This method creates a connection to the iPhone's <code>devicecheckd</code> daemon:</p>
+
+<pre><code><span class="type">NSXPCConnection</span> *xpc_connection = (<span class="type">NSXPCConnection</span> *)objc_msgSend(
+                              objc_alloc((<span class="type">Class</span>)&amp;OBJC_CLASS___NSXPCConnection),
+                              <span class="string">"initWithMachServiceName:options:"</span>,
+                              CFSTR(<span class="string">"com.apple.devicecheckd"</span>),
+                              <span class="number">0LL</span>);</code></pre>
+
+    <h3>devicecheckd</h3>
+
+    <p>After connecting to the <code>devicecheckd</code> daemon via XPC, the following chain of calls starts. When a connection is received, the daemon invokes <code>-[DCXPCListener listener:shouldAcceptNewConnection:]</code> &rarr; <code>-[DCClientHandler initWithConnection:]</code>, and after the client makes an RPC call &rarr; <code>-[DCClientHandler fetchOpaqueBlobWithCompletion]</code>.</p>
+
+    <p>First of all, <code>-[DCClientHandler fetchOpaqueBlobWithCompletion]</code> calls:</p>
+
+<pre><code><span class="keyword">if</span> ( -[DCClientHandler _isSupported](self, <span class="string">"_isSupported"</span>) )</code></pre>
+
+    <p>The value of this variable is hard-coded in <code>DeviceIdentityIsSupported</code> from <code>DeviceIdentity.framework</code>:</p>
+
+<pre><code><span class="type">__int64</span> <span class="func">DeviceIdentityIsSupported_1</span>()
+{
+  <span class="keyword">return</span> <span class="number">1LL</span>;
+}</code></pre>
+
+    <p class="note">I assume that if DCDevice is unavailable on the device, then there will be a different build of the framework where it is hard-coded to 0.</p>
+
+    <p>After checking support, it calls <code>-[DCClientHandler _generateAppIDFromCurrentConnection]</code> &mdash; this method obtains <code>&lt;TeamID&gt;.&lt;BundleIdentifier&gt;</code> (format: <code>ABCDE12345.com.example.myApp</code>) using entitlements (<code>-[NSXPCConnection valueForEntitlement:]</code>), and if that fails, it uses <code>SecTaskCopyTeamIdentifier</code> and <code>SecTaskCopySigningIdentifier</code>.</p>
+
+    <p>If <code>team_id</code> is valid and not <code>"0000000000"</code>, the method combines the <code>team_id</code> and <code>bundle_id</code> with a dot; otherwise it uses only the <code>bundle_id</code>. It returns an appID:</p>
+
+<pre><code><span class="keyword">return</span> [appID length] ? appID : <span class="keyword">nil</span>;</code></pre>
+
+    <p>Returning to <code>-[DCClientHandler fetchOpaqueBlobWithCompletion]</code>:</p>
+
+<pre><code><span class="keyword">if</span> ( app_id )
+{
+  DCContext_class = objc_alloc_init((<span class="type">Class</span>)&amp;OBJC_CLASS___DCContext);
+  objc_msgSend(DCContext_class, <span class="string">"setClientAppID:"</span>, app_id);
+
+  <span class="comment">// allocate DCDDeviceMetadata and initialize DCCryptoProxyImpl</span>
+  DCDDeviceMetadata = objc_alloc((<span class="type">Class</span>)&amp;OBJC_CLASS___DCDDeviceMetadata);
+  DCCryptoProxyImpl = objc_alloc_init((<span class="type">Class</span>)&amp;OBJC_CLASS___DCCryptoProxyImpl);
+
+  init_DCDDeviceMetadata = objc_msgSend(
+                             DCDDeviceMetadata,
+                             <span class="string">"initWithContext:cryptoProxy:"</span>,
+                             DCContext_class,
+                             DCCryptoProxyImpl);
+
+  objc_msgSend(init_DCDDeviceMetadata, <span class="string">"generateEncryptedBlobWithCompletion:"</span>, v4);
+}</code></pre>
+
+    <p>In summary, the <code>devicecheckd</code> daemon returns an encrypted token (opaque blob) to <code>DeviceCheck.framework</code> via XPC in the completion handler passed to <code>-[DCDDeviceMetadata generateEncryptedBlobWithCompletion:]</code>. This blob is later exposed to callers as the token returned by <code>-[DCDevice generateTokenWithCompletionHandler:]</code>.</p>
+
+    <h3>DCContext, DCDDeviceMetadata, and DCCryptoProxyImpl</h3>
+
+    <p>The behavior described below is implemented in <code>DeviceCheckInternal.framework</code>.</p>
+
+    <p>The first thing that happens in <code>-[DCClientHandler fetchOpaqueBlobWithCompletion]</code> is the initialization of <code>DCContext</code> and assignment of our <code>&lt;TeamID&gt;.&lt;BundleIdentifier&gt;</code> to it:</p>
+
+<pre><code>DCContext_class = objc_alloc_init((<span class="type">Class</span>)&amp;OBJC_CLASS___DCContext);
+objc_msgSend(DCContext_class, <span class="string">"setClientAppID:"</span>, app_id);</code></pre>
+
+    <p>Since <code>DCContext</code> has no <code>-init</code> method of its own, it simply inherits the implementation from <code>NSObject</code>. The method <code>-[DCContext setClientAppID:]</code> sets <code>self-&gt;_clientAppID</code>:</p>
+
+<pre><code><span class="type">id</span> __cdecl __noreturn -[DCContext clientAppID](<span class="type">DCContext</span> *self, <span class="type">SEL</span> a2)
+{
+  <span class="keyword">return</span> objc_getProperty_33(self, a2, <span class="number">8LL</span>, <span class="number">1</span>);
+}</code></pre>
+
+    <p>Now our <code>DCDDeviceMetadata</code> is initialized:</p>
+
+<pre><code>init_DCDDeviceMetadata = objc_msgSend(
+                           DCDDeviceMetadata,
+                           <span class="string">"initWithContext:cryptoProxy:"</span>,
+                           DCContext_class,
+                           DCCryptoProxyImpl_class_arg);</code></pre>
+
+    <p>What happens during the initialization of <code>DCDDeviceMetadata</code>:</p>
+
+<pre><code><span class="comment">// instance memory layout</span>
+<span class="keyword">struct</span> <span class="type">DCDDeviceMetadata</span> <span class="comment">// sizeof=0x18</span>
+{
+    <span class="type">unsigned __int8</span> superclass_opaque[<span class="number">8</span>];
+    <span class="type">DCCryptoProxy</span> *_cryptoProxy;
+    <span class="type">DCContext</span> *_context;
+};
+
+<span class="type">id</span> -[DCDDeviceMetadata initWithContext:cryptoProxy:](<span class="type">DCDDeviceMetadata</span> *self, <span class="type">SEL</span> a2,
+    <span class="type">id</span> DCContext_class_arg, <span class="type">id</span> DCCryptoProxyImpl_class_arg)
+{
+  <span class="type">DCDDeviceMetadata</span> *dc_device_metadata = -[DCDDeviceMetadata init](self, <span class="string">"init"</span>);
+
+  <span class="keyword">if</span> ( dc_device_metadata )
+  {
+    j__objc_storeStrong((<span class="type">id</span> *)&amp;dc_device_metadata-&gt;_cryptoProxy, DCCryptoProxyImpl_class_arg);
+    j__objc_storeStrong((<span class="type">id</span> *)&amp;dc_device_metadata-&gt;_context, DCContext_class_arg);
+  }
+
+  <span class="keyword">return</span> (<span class="type">id</span> *)dc_device_metadata;
+}</code></pre>
+
+    <p>All classes have been initialized and now the <code>devicecheckd</code> daemon calls <code>generateEncryptedBlobWithCompletion:</code> &mdash; a method that will begin generating the token.</p>
+
+    <div class="separator">&bull; &bull; &bull;</div>
+
+    <h2>Chapter 2 &mdash; DeviceCheckInternal.framework</h2>
+
+    <p class="note">Almost all methods are rewritten by me to make them easier to read and understand.</p>
+
+    <p>Our daemon invoked the method <code>generateEncryptedBlobWithCompletion:</code> &mdash; this is the start of token creation.</p>
+
+<pre><code><span class="type">void</span> __cdecl -[DCDDeviceMetadata generateEncryptedBlobWithCompletion:](
+    <span class="type">DCDDeviceMetadata</span> *self, <span class="type">SEL</span> a2, <span class="type">id</span> completion_arg)
+{
+  <span class="type">id</span> v4 = objc_retain(completion_arg);
+
+  <span class="type">DCCryptoProxy</span> *cryptoProxy = self-&gt;_cryptoProxy;
+  <span class="type">DCContext</span> *context = self-&gt;_context;
+
+  [cryptoProxy fetchOpaqueBlobWithContext:context
+                              completion:^(<span class="type">NSData</span> *blob, <span class="type">NSError</span> *error) {
+      <span class="comment">// if data is non-zero, call completion(data, nil)</span>
+      <span class="comment">// if data is zero, create NSError with code 0 and call completion(nil, error)</span>
+  }];
+}</code></pre>
+
+    <p>At this point, <code>-[DCCryptoProxy fetchOpaqueBlobWithContext:completion:]</code> is called with our context and the completion handler:</p>
+
+<pre><code><span class="type">void</span> __cdecl -[DCCryptoProxyImpl fetchOpaqueBlobWithContext:completion:](
+        <span class="type">DCCryptoProxyImpl</span> *self, <span class="type">SEL</span> a2,
+        <span class="type">id</span> DCContext_arg, <span class="type">id</span> completion_arg)
+{
+    <span class="type">id</span> retainedContext = [DCContext_arg retain];
+    <span class="type">void</span> (^copiedCompletion)(<span class="type">NSData</span> *, <span class="type">NSError</span> *) = [completion_arg copy];
+
+    <span class="keyword">if</span> (os_log_type_enabled(self.logger, OS_LOG_TYPE_DEFAULT))
+    {
+      os_log(self.logger, <span class="string">"Generating certificate..."</span>);
+    }
+
+    __block <span class="type">id</span> blockContext = retainedContext;
+    __block <span class="type">void</span> (^blockCompletion)(<span class="type">NSData</span> *, <span class="type">NSError</span> *) = copiedCompletion;
+
+    [self _fetchPublicKey:^(<span class="type">NSData</span> *publicKey) {
+          <span class="type">DCCertificateGenerator</span> *generator = [[<span class="type">DCCertificateGenerator</span> alloc]
+              initWithContext:blockContext
+                     publicKey:publicKey];
+
+          [generator generateEncryptedCertificateChainWithCompletion:
+              ^(<span class="type">NSData</span> *encryptedChain, <span class="type">NSError</span> *error) {
+                  blockCompletion(encryptedChain, error);
+              }
+          ];
+      }
+    ];
+}</code></pre>
+
+    <h3>Getting the publicKey</h3>
+
+    <p>First, the publicKey is obtained, and then it is passed on:</p>
+
+<pre><code><span class="type">void</span> __cdecl -[DCCryptoProxyImpl _fetchPublicKey:](<span class="type">DCCryptoProxyImpl</span> *self, <span class="type">SEL</span> a2, <span class="type">id</span> completion)
+{
+  <span class="type">DCAssetFetcher</span> *fetcher = [<span class="type">DCAssetFetcher</span> sharedFetcher];
+  [fetcher fetchPublicKeyAssetWithCompletion:^(<span class="type">NSData</span> *publicKey) {
+      completion(publicKey);
+  }];
+}</code></pre>
+
+    <p>This method calls <code>-[DCAssetFetcher fetchPublicKeyAssetWithCompletion:]</code>:</p>
+
+<pre><code><span class="type">void</span> __cdecl -[DCAssetFetcher fetchPublicKeyAssetWithCompletion:](
+    <span class="type">DCAssetFetcher</span> *self, <span class="type">SEL</span> a2, <span class="type">id</span> publicKeyCompletion)
+{
+  <span class="type">DCAssetFetcherContext</span> *context = [[<span class="type">DCAssetFetcherContext</span> alloc] init];
+  <span class="type">void</span> (^completionBlock)(<span class="type">NSData</span> *) = [publicKeyCompletion retain];
+
+  [context setAllowCatalogRefresh:<span class="number">NO</span>];
+  [self _fetchAssetWithContext:context
+        completionHandler:completionBlock];
+}</code></pre>
+
+    <p>We continue following the call chain into <code>_queryMetadataWithContext:</code>:</p>
+
+<pre><code><span class="type">void</span> __cdecl -[DCAssetFetcher _queryMetadataWithContext:completion:](
+        <span class="type">DCAssetFetcher</span> *self, <span class="type">SEL</span> a2,
+        <span class="type">DCAssetFetcherContext</span> *context, <span class="type">id</span> completion)
+{
+    <span class="type">id</span> assetQuery = [[self _assetQuery] retain];
+    <span class="type">NSUInteger</span> resultCode = [assetQuery queryMetaDataSync];
+
+    <span class="keyword">if</span> ([retainedContext ignoreCachedMetadata] || resultCode == <span class="number">2</span>)
+    {
+        [self _handleMissingMetadataWithContext:retainedContext
+                                   completion:completionBlock];
+    } <span class="keyword">else</span> {
+      <span class="keyword">if</span> (resultCode != <span class="number">0</span>)
+      {
+          <span class="type">NSError</span> *error = [<span class="type">NSError</span> errorWithDomain:<span class="string">@"com.apple.twobit.fetcherror"</span>
+                                               code:<span class="number">0xFFFF_FFFF_FFFF_F448</span>
+                                           userInfo:<span class="keyword">nil</span>];
+          completionBlock(<span class="keyword">nil</span>, error);
+          <span class="keyword">return</span>;
+      }
+
+      [self _handleSuccessForQuery:assetQuery
+                         completion:completionBlock];
+    }
+}</code></pre>
+
+    <p>The asset validation chain resolves through <code>_handleSuccessForQuery:</code> &rarr; <code>_validateAsset:</code> &rarr; <code>+[DCAsset assetWithMobileAsset:]</code>, which extracts the public key from <code>com.apple.devicecheck.pubvalue</code>:</p>
+
+<pre><code>+ (<span class="type">DCAsset</span> *)<span class="func">assetWithMobileAsset</span>:(<span class="type">NSDictionary</span> *)mobileAsset {
+    <span class="type">NSNumber</span> *version = mobileAsset[<span class="string">@"com.apple.MobileAsset.AssetVersion"</span>];
+    <span class="keyword">if</span> (![version isKindOfClass:[<span class="type">NSNumber</span> class]] || version.integerValue != <span class="number">1</span>) {
+        <span class="keyword">return</span> <span class="keyword">nil</span>;
+    }
+
+    <span class="type">NSData</span> *pubKeyData = mobileAsset[<span class="string">@"com.apple.devicecheck.pubvalue"</span>];
+    <span class="keyword">if</span> (![pubKeyData isKindOfClass:[<span class="type">NSData</span> class]] || pubKeyData.length == <span class="number">0</span>) {
+        <span class="keyword">return</span> <span class="keyword">nil</span>;
+    }
+
+    <span class="type">DCAsset</span> *asset = [[<span class="type">DCAsset</span> alloc] init];
+    asset.version = <span class="number">1</span>;
+    asset.publicKey = pubKeyData;
+
+    <span class="type">NSNumber</span> *refreshInterval = mobileAsset[<span class="string">@"com.apple.devicecheck.refreshtimer"</span>];
+    <span class="keyword">if</span> ([refreshInterval isKindOfClass:[<span class="type">NSNumber</span> class]]) {
+        asset.publicKeyRefreshInterval = refreshInterval.doubleValue;
+    }
+
+    <span class="keyword">return</span> asset;
+}</code></pre>
+
+    <p>Interestingly, none of this metadata fetching is required for the key material itself: the effective public key is embedded in <code>__37__DCCryptoProxyImpl__fetchPublicKey___block_invoke</code>:</p>
+
+<pre><code>+[<span class="type">NSData</span> dataWithBytes:length:](&amp;OBJC_CLASS___NSData, <span class="string">"dataWithBytes:length:"</span>,
+    &amp;fallback_server_pubkey, <span class="number">65LL</span>);</code></pre>
+
+    <p>It is hard-coded and <strong>the same in all versions of macOS, iOS, and iPadOS</strong>:</p>
+
+<pre><code><span class="number">0450d934fa67bcf6f2dfbf96629e0a7238e9205d75f28cfcd84f35a6
+592bbe058a9c0f8edbca2acb67efb774971ca45f7d856a694fb1b9c40
+b94fb2e7a5a9498b0</span></code></pre>
+
+    <p>This is 130 hex characters &mdash; the key itself is 65 bytes. This value is the public key used by DeviceCheck.</p>
+
+    <div class="separator">&bull; &bull; &bull;</div>
+
+    <h2>Chapter 3 &mdash; Token encryption</h2>
+
+    <p class="note">Almost all methods are rewritten by me to make them easier to read and understand.</p>
+
+    <p>Returning to <code>fetchOpaqueBlobWithContext:</code> &mdash; after the public key is fetched, a <code>DCCertificateGenerator</code> is initialized:</p>
+
+<pre><code><span class="keyword">struct</span> <span class="type">DCCertificateGenerator</span> <span class="comment">// sizeof=0x18</span>
+{
+    <span class="type">unsigned __int8</span> superclass_opaque[<span class="number">8</span>];
+    <span class="type">NSData</span> *_publicKey;
+    <span class="type">DCContext</span> *_context;
+};
+
+<span class="type">id</span> -[DCCertificateGenerator initWithContext:publicKey:](
+    <span class="type">DCCertificateGenerator</span> *self, <span class="type">SEL</span> a2, <span class="type">id</span> context_arg, <span class="type">id</span> publicKey_arg)
+{
+  <span class="type">DCCertificateGenerator</span> *v9 = -[DCCertificateGenerator init](self, <span class="string">"init"</span>);
+  <span class="keyword">if</span> ( v9 )
+  {
+    j__objc_storeStrong((<span class="type">id</span> *)&amp;v9-&gt;_publicKey, publicKey_arg);
+    j__objc_storeStrong((<span class="type">id</span> *)&amp;v9-&gt;_context, context_arg);
+  }
+  <span class="keyword">return</span> (<span class="type">id</span> *)v9;
+}</code></pre>
+
+    <p>After successful initialization, <code>generateEncryptedCertificateChainWithCompletion</code> is called. Conceptually, <code>_generateCertificateChainWithCompletion</code> retrieves a certificate chain from the keychain and passes it into <code>_encryptData</code>, where the final token is constructed.</p>
+
+    <p>Two root certificates are fetched from the keychain in <code>__DeviceIdentityIssueClientCertificateWithCompletion_block_invoke</code>; representative examples:</p>
+
+    <div class="cert-block">-----BEGIN CERTIFICATE-----
+MIIDPjCCAuWgAwIBAgIGAZhghIx7MAoGCCqGSM49BAMCMFMxJzAlBgNVBAMMHkJh
+c2ljIEF0dGVzdGF0aW9uIFVzZXIgU3ViIENBMTETMBEGA1UECgwKQXBwbGUgSW5j
+LjETMBEGA1UECAwKQ2FsaWZvcm5pYTAeFw0yNTA3MzAxMjQ1NTZaFw0yNjA3MDQy
+...
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIICIzCCAaigAwIBAgIIeNjhG9tnDGgwCgYIKoZIzj0EAwIwUzEnMCUGA1UEAwwe
+QmFzaWMgQXR0ZXN0YXRpb24gVXNlciBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJ
+bmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMB4XDTE3MDQyMDAwNDIwMFoXDTMyMDMy
+...
+-----END CERTIFICATE-----</div>
+
+    <p>The core of the token logic lives in <code>_encryptData</code>, which builds and encrypts the final payload:</p>
+
+<pre><code>- (<span class="type">NSData</span> *)<span class="func">_encryptData</span>:(<span class="type">NSData</span> *)data <span class="comment">// certificates</span>
+        serverSyncedDate:(<span class="type">NSDate</span> *)serverDate
+                    error:(<span class="type">NSError</span> **)error {
+
+    <span class="comment">// Get client App ID as UTF-8 data</span>
+    <span class="type">NSString</span> *clientAppID = [self.context clientAppID];
+    <span class="type">NSData</span> *clientAppData = [clientAppID dataUsingEncoding:NSUTF8StringEncoding];
+
+    <span class="comment">// Current timestamp</span>
+    <span class="type">NSTimeInterval</span> timestamp = [serverDate timeIntervalSince1970];
+
+    <span class="comment">// AES-GCM mode from CommonCrypto</span>
+    <span class="keyword">const</span> <span class="keyword">struct</span> <span class="type">ccmode_gcm</span> *gcm = ccaes_gcm_encrypt_mode();
+
+    <span class="comment">// Allocate buffers</span>
+    <span class="type">size_t</span> payloadLen = inputLen + clientAppLen + <span class="number">81</span>;
+    <span class="type">size_t</span> outputLen  = inputLen + clientAppLen + <span class="number">235</span>;
+    <span class="type">uint8_t</span> *outBuf     = calloc(<span class="number">1</span>, outputLen);
+    <span class="type">uint8_t</span> *payloadBuf = calloc(<span class="number">1</span>, payloadLen);
+
+    <span class="comment">// Write header (type = 2) and payload length</span>
+    *((<span class="type">uint32_t</span> *)outBuf) = <span class="number">2</span>;
+    *((<span class="type">uint32_t</span> *)(outBuf + <span class="number">150</span>)) = (<span class="type">uint32_t</span>)payloadLen;
+
+    <span class="comment">// Copy device's static public key into outBuf at offset 5</span>
+    memcpy(outBuf + <span class="number">5</span>, devicePubKeyData.bytes, devicePubKeyData.length);
+
+    <span class="comment">// Assemble payload:</span>
+    <span class="comment">// [timestamp(8B), inputLen(4B), clientAppLen(4B), inputBytes, clientAppBytes]</span>
+    *((<span class="type">uint64_t</span> *)(payloadBuf + <span class="number">65</span>)) = (<span class="type">uint64_t</span>)timestamp;
+    *((<span class="type">uint32_t</span> *)(payloadBuf + <span class="number">73</span>)) = (<span class="type">uint32_t</span>)inputLen;
+    *((<span class="type">uint32_t</span> *)(payloadBuf + <span class="number">77</span>)) = (<span class="type">uint32_t</span>)clientAppLen;
+    memcpy(payloadBuf + <span class="number">81</span>, inputBytes, inputLen);
+    memcpy(payloadBuf + <span class="number">81</span> + inputLen, clientAppBytes, clientAppLen);
+
+    <span class="comment">// Create ephemeral ECDH key via keybag</span>
+    <span class="type">id</span> keybag = [self keybagHandle];
+    <span class="type">uint64_t</span> refKey = <span class="number">0</span>;
+    <span class="type">int</span> aksErr = aks_ref_key_create((__int64)keybag, <span class="number">11</span>, <span class="number">4</span>, <span class="number">0</span>, <span class="number">0</span>, &amp;refKey);
+
+    <span class="comment">// Get ephemeral public key (65 bytes)</span>
+    <span class="type">size_t</span> ecdhPubLen = <span class="number">0</span>;
+    <span class="keyword">const</span> <span class="type">uint8_t</span> *ecdhPub = aks_ref_key_get_public_key(refKey, &amp;ecdhPubLen);
+    memcpy(outBuf + <span class="number">85</span>, ecdhPub, ecdhPubLen);
+
+    <span class="comment">// ECDH shared secret with device's static public key</span>
+    aks_ref_key_compute_key(refKey, <span class="number">0</span>, <span class="number">0</span>, devicePubBytes, devicePubLen);
+
+    <span class="comment">// Derive key material: HKDF-SHA256 -> 44 bytes (32B key + 12B IV)</span>
+    <span class="type">uint8_t</span> hkdfOut[<span class="number">44</span>];
+    cchkdf(ccsha256_di(), sharedLen, sharedSecret, <span class="number">0</span>, <span class="keyword">NULL</span>, <span class="number">0x2C</span>, hkdfOut);
+    <span class="type">uint8_t</span> *aesKey = hkdfOut;
+    <span class="type">uint8_t</span> *aesIV  = hkdfOut + <span class="number">32</span>;
+
+    <span class="comment">// Encrypt with AES-GCM</span>
+    ccgcm_one_shot(gcm,
+                   <span class="number">32</span>, aesKey,
+                   <span class="number">12</span>, aesIV,
+                   <span class="number">0</span>, <span class="keyword">NULL</span>,
+                   payloadLen, payloadBuf,
+                   outBuf + <span class="number">154</span>,    <span class="comment">// ciphertext</span>
+                   <span class="number">16</span>, outBuf + <span class="number">1</span>); <span class="comment">// GCM tag</span>
+
+    <span class="type">NSData</span> *encryptedData = [<span class="type">NSData</span> dataWithBytes:outBuf length:outputLen];
+
+    free(outBuf);
+    free(payloadBuf);
+    <span class="keyword">return</span> encryptedData;
+}</code></pre>
+
+    <div class="separator">&bull; &bull; &bull;</div>
+
+    <h2>Chapter 4 &mdash; Conclusion and security implications</h2>
+
+    <p>This write-up traces the full DeviceCheck token generation path: from calling <code>DCDevice</code> in an app, through XPC into the <code>devicecheckd</code> daemon, into <code>DeviceCheckInternal.framework</code>, and finally to <code>_encryptData</code>, where the payload is constructed and encrypted.</p>
+
+    <p>Key stages are covered &mdash; initializing the context with <code>TeamID.BundleID</code>, resolving the public key (including the hard-coded fallback), assembling the certificate chain, and forming the opaque blob returned to the caller.</p>
+
+    <p>From a security and red-team perspective, this analysis provides the primitives needed to reason about DeviceCheck's trust model, to emulate or instrument the client in controlled environments, and to assess how robustly backends validate and interpret DeviceCheck tokens.</p>
+
+    <div class="credits">
+      Work by <a href="https://github.com/andrd3v">andrd3v</a>. Thanks for the help, <a href="https://github.com/whoeevee">whoeevee</a>.
+    </div>
+  </article>
+
+  <footer>
+    &copy; andrd3v
+  </footer>
+</body>
+</html>
