@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My First CVE — CVE-2026-28882 — andrd3v</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      color: #1a1a1a;
+      background: #fafafa;
+      line-height: 1.7;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 2rem;
+      color: #888;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .back:hover { color: #1a1a1a; }
+
+    article h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+
+    .meta {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .meta a { color: #555; text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+
+    article p {
+      margin-bottom: 1rem;
+    }
+
+    article code {
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+      font-size: 0.85em;
+      background: #f0f0f0;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+
+    article a { color: #1a1a1a; }
+    article a:hover { text-decoration: none; }
+
+    .proof-img {
+      display: block;
+      margin: 1.5rem auto;
+      max-width: 100%;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .img-caption {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #999;
+      margin-top: -1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .cve-box {
+      background: #f0f4ff;
+      border-left: 3px solid #4a7cff;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .credits {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .credits a { color: #1a1a1a; text-decoration: none; font-weight: 500; }
+    .credits a:hover { text-decoration: underline; }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+      font-size: 0.85rem;
+      color: #999;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 1.5rem 0.75rem; }
+      article h1 { font-size: 1.3rem; }
+      .cve-box { font-size: 0.88rem; padding: 0.6rem 0.75rem; }
+      .proof-img { border-radius: 4px; }
+      .meta { font-size: 0.8rem; }
+    }
+
+    @media (max-width: 380px) {
+      body { padding: 1rem 0.5rem; }
+      article h1 { font-size: 1.15rem; }
+      .cve-box { font-size: 0.83rem; }
+    }
+
+    @media (min-width: 1400px) {
+      body { max-width: 820px; font-size: 1.05rem; }
+    }
+
+    @media (min-width: 2000px) {
+      body { max-width: 920px; font-size: 1.1rem; }
+      article h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <a href="../" class="back">&larr; andrd3v</a>
+
+  <article>
+    <h1>My First CVE &mdash; CVE-2026-28882</h1>
+    <div class="meta">
+      <time datetime="2026-05-20">May 20, 2026</time> &middot;
+      by <a href="https://github.com/andrd3v">andrd3v</a>
+    </div>
+
+    <div class="cve-box"><strong>CVE-2026-28882</strong> &mdash; a privacy issue in <code>libxpc</code> on iOS. An app could enumerate a user's installed apps and running processes. Fixed by Apple with improved checks across all platforms.</div>
+
+    <p>A couple of months ago I reported a privacy bug in <code>libxpc</code> on iOS to Apple. An app could use it to find out what other apps you have installed and what processes are running.</p>
+
+    <p>Apple patched it across all platforms, and my name ended up on the advisory. First CVE. I'm not going to pretend I played it cool when I saw it.</p>
+
+    <img src="credit.png" alt="Apple security advisory crediting andrd3v for CVE-2026-28882" class="proof-img">
+    <p class="img-caption">Apple security advisory</p>
+
+    <p>I can't share the technical details for now.</p>
+
+    <p>First one down. Won't be the last.</p>
+
+    <div class="credits">
+      <a href="https://github.com/andrd3v">andrd3v</a>
+    </div>
+  </article>
+
+  <footer>
+    &copy; andrd3v
+  </footer>
+</body>
+</html>
