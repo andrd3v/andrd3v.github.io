@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detecting task_for_pid and pid_for_task via CS_INVALID_ALLOWED — andrd3v</title>
+  <meta name="description" content="Detect task_for_pid and pid_for_task workaround on macOS by checking CS_INVALID_ALLOWED code signing flag via csops(). Covers detection of both methods including Jonathan Levin's pid_for_task technique.">
+  <meta name="keywords" content="task_for_pid, pid_for_task, detect task_for_pid, detect pid_for_task, task_for_pid detection, pid_for_task detection, CS_INVALID_ALLOWED, csops, csops CS_OPS_STATUS, macOS security, anti-debug, anti-debug macOS, anti-tamper, anti-cheat macOS, code signing flags, XNU, mach task port, mach task port detection, process injection detection, detect process injection, task port detection, TASK_EXTMOD_INFO, task_for_pid_count, processor_set_tasks, macOS arm64, apple security, kernel code signing, detect debugger macOS">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      color: #1a1a1a;
+      background: #fafafa;
+      line-height: 1.7;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 2rem;
+      color: #888;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .back:hover { color: #1a1a1a; }
+
+    article h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+
+    .meta {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .meta a { color: #555; text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+
+    .repo-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .repo-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    article h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    article p {
+      margin-bottom: 1rem;
+    }
+
+    article strong { font-weight: 600; }
+
+    article code {
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+      font-size: 0.85em;
+      background: #f0f0f0;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+
+    article pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1.25rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+
+    article pre code {
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      color: inherit;
+      font-size: 0.8rem;
+    }
+
+    .keyword { color: #569cd6; }
+    .type { color: #4ec9b0; }
+    .string { color: #ce9178; }
+    .comment { color: #6a9955; }
+    .number { color: #b5cea8; }
+    .func { color: #dcdcaa; }
+    .directive { color: #c586c0; }
+
+    article ul, article ol {
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+
+    article li { margin-bottom: 0.35rem; }
+
+    article a { color: #1a1a1a; }
+    article a:hover { text-decoration: none; }
+
+    .tldr {
+      background: #f0f4ff;
+      border-left: 3px solid #4a7cff;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .separator {
+      text-align: center;
+      margin: 2rem 0;
+      color: #ccc;
+      font-size: 1.25rem;
+      letter-spacing: 0.5em;
+    }
+
+    .output-block {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1.25rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 1.25rem;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      white-space: pre;
+    }
+
+    .output-block .prompt { color: #6a9955; }
+    .output-block .highlight { color: #569cd6; }
+    .output-block .detected { color: #f44747; font-weight: bold; }
+
+    .credits {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .credits a { color: #1a1a1a; text-decoration: none; font-weight: 500; }
+    .credits a:hover { text-decoration: underline; }
+
+    .tags {
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.8rem;
+      color: #999;
+      line-height: 1.8;
+    }
+
+    .tags a {
+      color: #888;
+      text-decoration: none;
+      margin-right: 0.25rem;
+    }
+
+    .tags a:hover { color: #1a1a1a; }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid #eee;
+      font-size: 0.85rem;
+      color: #999;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 1.5rem 0.75rem; }
+
+      article h1 { font-size: 1.3rem; }
+      article h2 { font-size: 1.15rem; margin-top: 2rem; }
+
+      article pre {
+        padding: 1rem;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+        border-radius: 4px;
+      }
+
+      article pre code { font-size: 0.7rem; }
+
+      .output-block {
+        font-size: 0.7rem;
+        padding: 1rem;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+        border-radius: 4px;
+      }
+
+      .tldr { font-size: 0.88rem; padding: 0.6rem 0.75rem; }
+      .meta { font-size: 0.8rem; }
+    }
+
+    @media (max-width: 380px) {
+      body { padding: 1rem 0.5rem; }
+
+      article h1 { font-size: 1.15rem; }
+
+      article pre {
+        padding: 0.75rem;
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+      }
+
+      article pre code { font-size: 0.65rem; }
+
+      .output-block {
+        font-size: 0.65rem;
+        padding: 0.75rem;
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+      }
+
+      .tldr { font-size: 0.83rem; }
+    }
+
+    @media (min-width: 1400px) {
+      body { max-width: 820px; font-size: 1.05rem; }
+      article pre code { font-size: 0.85rem; }
+      .output-block { font-size: 0.85rem; }
+    }
+
+    @media (min-width: 2000px) {
+      body { max-width: 920px; font-size: 1.1rem; }
+      article h1 { font-size: 2rem; }
+      article pre code { font-size: 0.9rem; }
+      .output-block { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <a href="../" class="back">&larr; andrd3v</a>
+
+  <article>
+    <h1>Detecting task_for_pid and pid_for_task via CS_INVALID_ALLOWED</h1>
+    <div class="meta">
+      <time datetime="2026-06-25">June 25, 2026</time> &middot;
+      by <a href="https://github.com/andrd3v">andrd3v</a> &middot;
+      macOS arm64
+    </div>
+
+    <div class="tldr"><strong>TL;DR:</strong> When any process obtains your Mach task port (via <code>task_for_pid</code> or the <code>pid_for_task</code> workaround), XNU sets the <code>CS_INVALID_ALLOWED</code> flag on your process. You can read it with <code>csops()</code> from userspace. Unlike <code>TASK_EXTMOD_INFO</code>, this catches both methods.</div>
+
+    <h2>The problem</h2>
+
+    <p>There is an existing way to detect <code>task_for_pid</code> calls on your process: <code>TASK_EXTMOD_INFO</code> (flavor <code>0x13</code> via <code>task_info()</code>) provides a <code>task_for_pid_count</code> counter. But it is blind to <code>pid_for_task</code>. If someone uses Jonathan Levin's technique to enumerate all task ports via <code>processor_set_tasks</code> and match by PID, the counter stays at zero. You never know it happened.</p>
+
+    <h2>The solution</h2>
+
+    <p>When a process obtains another process's Mach task port, whether through <code>task_for_pid()</code> or the <code>pid_for_task()</code> workaround, the XNU kernel sets the <code>CS_INVALID_ALLOWED</code> (<code>0x20</code>) flag on the target process's code signing flags.</p>
+
+    <p>This flag can be read from userspace via <code>csops(pid, CS_OPS_STATUS)</code>. It returns the full code signing flags, and bit <code>0x20</code> tells you if anyone grabbed your task port by any method.</p>
+
+    <div class="separator">&bull; &bull; &bull;</div>
+
+    <h2>Detection code</h2>
+
+    <p>The detection is a single function. Call <code>csops</code> with <code>CS_OPS_STATUS</code> (op <code>0</code>) to get the code signing flags, then check for <code>CS_INVALID_ALLOWED</code>:</p>
+
+<pre><code><span class="comment">// from xnu/osfmk/kern/cs_blobs.h</span>
+<span class="directive">#define</span> CS_INVALID_ALLOWED  <span class="number">0x00000020</span>
+
+<span class="keyword">extern</span> <span class="type">int</span> <span class="func">csops</span>(<span class="type">pid_t</span> pid, <span class="type">unsigned int</span> ops,
+                 <span class="type">void</span> *useraddr, <span class="type">size_t</span> usersize);
+
+<span class="type">int</span> <span class="func">detect_tfp_or_pft</span>()
+{
+    <span class="type">uint32_t</span> cs_flags = <span class="number">0</span>;
+    <span class="func">csops</span>(<span class="func">getpid</span>(), <span class="number">0</span>, &amp;cs_flags, <span class="keyword">sizeof</span>(cs_flags));
+
+    <span class="keyword">if</span> (cs_flags &amp; CS_INVALID_ALLOWED)
+        <span class="keyword">return</span> <span class="number">1</span>;
+    <span class="keyword">return</span> <span class="number">0</span>;
+}</code></pre>
+
+    <p>That's it. Returns <code>1</code> if someone has obtained your task port, <code>0</code> if clean. Works regardless of whether <code>task_for_pid</code> or <code>pid_for_task</code> was used.</p>
+
+    <h2>PoC</h2>
+
+    <p>Three binaries to demonstrate:</p>
+
+    <ul>
+      <li><strong>test.c</strong> is the target process. It polls <code>csops()</code> every 5 seconds and prints <code>1</code> if <code>CS_INVALID_ALLOWED</code> is set.</li>
+      <li><strong>tfp.c</strong> calls <code>task_for_pid()</code> on the target.</li>
+      <li><strong>pft.c</strong> uses the <code>pid_for_task()</code> workaround (Jonathan Levin's technique via <code>processor_set_tasks</code>).</li>
+    </ul>
+
+    <h2>The target (test.c)</h2>
+
+<pre><code><span class="directive">#include</span> <span class="string">&lt;stdio.h&gt;</span>
+<span class="directive">#include</span> <span class="string">&lt;unistd.h&gt;</span>
+
+<span class="directive">#define</span> CS_INVALID_ALLOWED  <span class="number">0x00000020</span>
+
+<span class="keyword">extern</span> <span class="type">int</span> <span class="func">csops</span>(<span class="type">pid_t</span> pid, <span class="type">unsigned int</span> ops,
+                 <span class="type">void</span> *useraddr, <span class="type">size_t</span> usersize);
+
+<span class="type">int</span> <span class="func">detect_tfp_or_pft</span>()
+{
+    <span class="type">uint32_t</span> cs_flags = <span class="number">0</span>;
+    <span class="func">csops</span>(<span class="func">getpid</span>(), <span class="number">0</span>, &amp;cs_flags, <span class="keyword">sizeof</span>(cs_flags));
+    printf(<span class="string">"cs_flags=0x%x\n"</span>, cs_flags);
+
+    <span class="keyword">if</span> (cs_flags &amp; CS_INVALID_ALLOWED)
+        <span class="keyword">return</span> <span class="number">1</span>;
+    <span class="keyword">return</span> <span class="number">0</span>;
+}
+
+<span class="type">int</span> <span class="func">main</span>()
+{
+    printf(<span class="string">"pid %d\n"</span>, <span class="func">getpid</span>());
+    <span class="keyword">while</span> (<span class="number">1</span>)
+    {
+        <span class="type">int</span> a = <span class="func">detect_tfp_or_pft</span>();
+        printf(<span class="string">"%d\n"</span>, a);
+        <span class="func">sleep</span>(<span class="number">5</span>);
+    }
+    <span class="keyword">return</span> <span class="number">0</span>;
+}</code></pre>
+
+    <h2>task_for_pid caller (tfp.c)</h2>
+
+<pre><code><span class="directive">#include</span> <span class="string">&lt;stdio.h&gt;</span>
+<span class="directive">#include</span> <span class="string">&lt;stdlib.h&gt;</span>
+<span class="directive">#include</span> <span class="string">&lt;mach/mach.h&gt;</span>
+
+<span class="type">int</span> <span class="func">main</span>(<span class="type">int</span> argc, <span class="type">char</span> **argv)
+{
+    <span class="type">pid_t</span> pid = <span class="func">atoi</span>(argv[<span class="number">1</span>]);
+    <span class="type">task_t</span> task;
+    <span class="type">kern_return_t</span> kr = <span class="func">task_for_pid</span>(<span class="func">mach_task_self</span>(), pid, &amp;task);
+    <span class="keyword">if</span> (kr != KERN_SUCCESS) <span class="keyword">return</span> -<span class="number">1</span>;
+    printf(<span class="string">"tfp %d"</span>, task);
+    <span class="keyword">return</span> <span class="number">0</span>;
+}</code></pre>
+
+    <h2>pid_for_task workaround (pft.c)</h2>
+
+<pre><code><span class="directive">#include</span> <span class="string">&lt;stdio.h&gt;</span>
+<span class="directive">#include</span> <span class="string">&lt;stdlib.h&gt;</span>
+<span class="directive">#include</span> <span class="string">&lt;mach/mach.h&gt;</span>
+
+<span class="comment">// from https://newosxbook.com/articles/PST2.html</span>
+<span class="type">mach_port_t</span> <span class="func">task_for_pid_workaround</span>(<span class="type">int</span> Pid)
+{
+    <span class="type">host_t</span> myhost = <span class="func">mach_host_self</span>();
+    <span class="type">mach_port_t</span> psDefault;
+    <span class="type">mach_port_t</span> psDefault_control;
+
+    <span class="type">task_array_t</span> tasks;
+    <span class="type">mach_msg_type_number_t</span> numTasks;
+
+    <span class="type">kern_return_t</span> kr;
+
+    kr = <span class="func">processor_set_default</span>(myhost, &amp;psDefault);
+    kr = <span class="func">host_processor_set_priv</span>(myhost, psDefault,
+                                &amp;psDefault_control);
+    <span class="keyword">if</span> (kr != KERN_SUCCESS) {
+        fprintf(stderr,
+                <span class="string">"host_processor_set_priv failed with %x\n"</span>, kr);
+        <span class="keyword">return</span> MACH_PORT_NULL;
+    }
+
+    kr = <span class="func">processor_set_tasks</span>(psDefault_control,
+                            &amp;tasks, &amp;numTasks);
+    <span class="keyword">if</span> (kr != KERN_SUCCESS) {
+        fprintf(stderr,
+                <span class="string">"processor_set_tasks failed with %x\n"</span>, kr);
+        <span class="keyword">return</span> MACH_PORT_NULL;
+    }
+
+    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; numTasks; i++) {
+        <span class="type">int</span> pid;
+        <span class="func">pid_for_task</span>(tasks[i], &amp;pid);
+        printf(<span class="string">"TASK %d PID :%d\n"</span>, i, pid);
+        <span class="keyword">if</span> (pid == Pid) <span class="keyword">return</span> tasks[i];
+    }
+
+    <span class="keyword">return</span> MACH_PORT_NULL;
+}
+
+<span class="type">int</span> <span class="func">main</span>(<span class="type">int</span> argc, <span class="type">char</span> **argv)
+{
+    <span class="type">int</span> pid = <span class="func">atoi</span>(argv[<span class="number">1</span>]);
+    <span class="type">mach_port_t</span> task = <span class="func">task_for_pid_workaround</span>(pid);
+    <span class="keyword">if</span> (task == MACH_PORT_NULL) <span class="keyword">return</span> -<span class="number">1</span>;
+    printf(<span class="string">"pft %d\n"</span>, task);
+    <span class="keyword">return</span> <span class="number">0</span>;
+}</code></pre>
+
+    <h2>Build</h2>
+
+<pre><code>clang -o test test.c
+clang -o tfp tfp.c
+clang -o pft pft.c</code></pre>
+
+    <h2>Test 1: task_for_pid</h2>
+
+<div class="output-block"><span class="prompt">$</span> ./test
+pid 10392
+cs_flags=0x22020201
+0                        <span class="comment">&lt;-- clean</span>
+cs_flags=0x22020201
+0
+
+<span class="prompt">$</span> sudo ./tfp 10392       <span class="comment">&lt;-- task_for_pid called</span>
+tfp 2563
+
+cs_flags=0x22020221
+<span class="detected">1                        &lt;-- DETECTED</span></div>
+
+    <p>After <code>task_for_pid</code> is called, the <code>CS_INVALID_ALLOWED</code> bit flips from <code>0</code> to <code>1</code> in the target's code signing flags. The flag value changes from <code>0x22020201</code> to <code>0x22020221</code>.</p>
+
+    <h2>Test 2: pid_for_task workaround</h2>
+
+<div class="output-block"><span class="prompt">$</span> ./test
+pid 10503
+cs_flags=0x22020201
+0                        <span class="comment">&lt;-- clean</span>
+
+<span class="prompt">$</span> sudo ./pft 10503       <span class="comment">&lt;-- pid_for_task workaround</span>
+So far so good
+TASK 0 PID :1673
+TASK 1 PID :1706
+TASK 2 PID :37262
+...
+TASK 12 PID :10503
+pft 4099
+
+cs_flags=0x22020221
+<span class="detected">1                        &lt;-- DETECTED</span></div>
+
+    <p>Same result. Even though <code>pid_for_task</code> bypasses the <code>task_for_pid_count</code> counter in <code>TASK_EXTMOD_INFO</code>, the kernel still sets <code>CS_INVALID_ALLOWED</code> on the target. The detection works for both methods.</p>
+
+    <h2>Why this matters</h2>
+
+    <p>If you are building anti cheat, you probably already check <code>TASK_EXTMOD_INFO</code>. But that only catches <code>task_for_pid</code>. Anyone using the <code>pid_for_task</code> workaround walks right past it undetected.</p>
+
+    <h2>Notes</h2>
+
+    <ul>
+      <li>Tested on macOS 27.0 beta 2, arm64.</li>
+      <li><code>CS_INVALID_ALLOWED</code> is defined in <a href="https://github.com/apple-oss-distributions/xnu/blob/94d3b452840153a99b38a3a9659680b2a006908e/osfmk/kern/cs_blobs.h">xnu/osfmk/kern/cs_blobs.h</a>.</li>
+      <li>The <code>pid_for_task</code> workaround is documented by <a href="https://newosxbook.com/articles/PST2.html">Jonathan Levin</a>.</li>
+    </ul>
+
+    <div class="tags">
+      <a href="#">#task_for_pid</a>
+      <a href="#">#pid_for_task</a>
+      <a href="#">#detect-task_for_pid</a>
+      <a href="#">#detect-pid_for_task</a>
+      <a href="#">#task_for_pid-detection</a>
+      <a href="#">#pid_for_task-detection</a>
+      <a href="#">#CS_INVALID_ALLOWED</a>
+      <a href="#">#csops</a>
+      <a href="#">#macOS</a>
+      <a href="#">#XNU</a>
+      <a href="#">#anti-debug</a>
+      <a href="#">#anti-tamper</a>
+      <a href="#">#anti-cheat</a>
+      <a href="#">#anti-debug-macOS</a>
+      <a href="#">#mach-task-port</a>
+      <a href="#">#mach-task-port-detection</a>
+      <a href="#">#code-signing</a>
+      <a href="#">#code-signing-flags</a>
+      <a href="#">#process-injection-detection</a>
+      <a href="#">#detect-process-injection</a>
+      <a href="#">#TASK_EXTMOD_INFO</a>
+      <a href="#">#task_for_pid_count</a>
+      <a href="#">#processor_set_tasks</a>
+      <a href="#">#macOS-security</a>
+      <a href="#">#arm64</a>
+      <a href="#">#reverse-engineering</a>
+      <a href="#">#csops-CS_OPS_STATUS</a>
+      <a href="#">#detect-debugger-macOS</a>
+      <a href="#">#macOS-anti-cheat</a>
+    </div>
+
+    <div class="credits">
+      <a href="https://github.com/andrd3v">andrd3v</a> &middot;
+      <a href="https://github.com/apple-oss-distributions/xnu/blob/94d3b452840153a99b38a3a9659680b2a006908e/osfmk/kern/cs_blobs.h">cs_blobs.h</a> &middot;
+      <a href="https://newosxbook.com/articles/PST2.html">pid_for_task (J. Levin)</a>
+    </div>
+  </article>
+
+  <footer>
+    &copy; andrd3v
+  </footer>
+</body>
+</html>

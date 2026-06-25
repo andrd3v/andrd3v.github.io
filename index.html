@@ -205,6 +205,11 @@
   <main>
     <ul class="articles">
       <li>
+        <a href="detecting-tfp/index.html">Detecting task_for_pid and pid_for_task via CS_INVALID_ALLOWED</a>
+        <time datetime="2026-06-25">25 June 2026</time>
+        <p class="summary">Detect when any process grabs your Mach task port by checking the CS_INVALID_ALLOWED code signing flag via csops(). Unlike TASK_EXTMOD_INFO, this catches both task_for_pid and the pid_for_task workaround.</p>
+      </li>
+      <li>
         <a href="injector/index.html">Cross-Process Dylib Injection via remote_call</a>
         <time datetime="2026-06-07">7 June 2026</time>
         <p class="summary">Calling dlopen directly in a remote process by hijacking thread state on arm64 &mdash; no shellcode, no intermediate libraries. Built on top of remote_call.</p>
