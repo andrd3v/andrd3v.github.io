@@ -6,17 +6,27 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://andrd3v.github.io/cves/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://andrd3v.github.io/dcdev/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://andrd3v.github.io/detecting-tfp/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://andrd3v.github.io/injector/</loc>
+    <loc>https://andrd3v.github.io/first-cve/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://andrd3v.github.io/first-cve/</loc>
+    <loc>https://andrd3v.github.io/injector/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -29,15 +39,5 @@
     <loc>https://andrd3v.github.io/touchbarHUD/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://andrd3v.github.io/dcdev/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://andrd3v.github.io/cves/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
   </url>
 </urlset>
