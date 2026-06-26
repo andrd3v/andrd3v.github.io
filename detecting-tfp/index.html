@@ -264,7 +264,7 @@
       </a>
     </div>
 
-    <div class="tldr"><strong>TL;DR:</strong> When any process obtains your Mach task port (via <code>task_for_pid</code> or the <code>pid_for_task</code> workaround), XNU sets the <code>CS_INVALID_ALLOWED</code> flag on your process. You can read it with <code>csops()</code> from userspace. Unlike <code>TASK_EXTMOD_INFO</code>, this catches both methods.</div>
+    <div class="tldr"><strong>TL;DR:</strong> When any process obtains your Mach task port (via <code>task_for_pid</code> or the <code>pid_for_task</code> workaround), XNU sets the <code>CS_INVALID_ALLOWED</code> flag on your process. You can read it with <code>csops()</code> from userspace. Unlike <code>TASK_EXTMOD_INFO</code>, this catches both methods. pid_for_task detect.</div>
 
     <h2>The problem</h2>
 
