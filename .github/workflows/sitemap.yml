@@ -1,0 +1,52 @@
+name: Update sitemap
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/index.html'
+
+jobs:
+  update-sitemap:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate sitemap
+        run: |
+          cat > sitemap.xml << 'HEADER'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url>
+              <loc>https://andrd3v.github.io/</loc>
+              <changefreq>weekly</changefreq>
+              <priority>1.0</priority>
+            </url>
+          HEADER
+
+          for dir in $(find . -mindepth 2 -name 'index.html' -not -path './.git/*' -not -path './.github/*' | sed 's|./||;s|/index.html||' | sort); do
+            priority="0.8"
+            if [ "$dir" = "cves" ] || [ "$dir" = "experience" ]; then
+              priority="0.6"
+            fi
+            cat >> sitemap.xml << EOF
+            <url>
+              <loc>https://andrd3v.github.io/${dir}/</loc>
+              <changefreq>monthly</changefreq>
+              <priority>${priority}</priority>
+            </url>
+          EOF
+          done
+
+          echo '</urlset>' >> sitemap.xml
+
+      - name: Commit sitemap
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add sitemap.xml
+          git diff --cached --quiet && exit 0
+          git commit -m "update sitemap.xml"
+          git push
