@@ -105,6 +105,33 @@
       border-bottom-color: #1a1a1a;
     }
 
+    .cvss {
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .cvss-badge {
+      display: inline-block;
+      padding: 0.15em 0.5em;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      text-decoration: none;
+    }
+
+    .cvss-badge:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-thickness: 1.5px;
+    }
+
+    .cvss-medium {
+      background: #fff3cd;
+      color: #856404;
+    }
+
     footer {
       margin-top: 3rem;
       padding-top: 1rem;
@@ -150,6 +177,7 @@
       <tr>
         <th>CVE</th>
         <th>Component</th>
+        <th>CVSS</th>
         <th>Impact</th>
         <th>Platforms</th>
       </tr>
@@ -158,6 +186,7 @@
       <tr>
         <td class="cve-id"><a href="../first-cve/">CVE-2026-28882</a></td>
         <td><span class="component">libxpc</span></td>
+        <td class="cvss"><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-28882" target="_blank" rel="noopener" class="cvss-badge cvss-medium">4.0</a></td>
         <td>An app may be able to enumerate a user's installed apps and running processes</td>
         <td class="platforms">
           <a href="https://support.apple.com/126792" target="_blank" rel="noopener">iOS</a>,
@@ -171,6 +200,7 @@
       <tr>
         <td class="cve-id">CVE-2026-43796</td>
         <td><span class="component">Game Center</span></td>
+        <td class="cvss"><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-43796" target="_blank" rel="noopener" class="cvss-badge cvss-medium">5.5</a></td>
         <td>An app may be able to access sensitive user data</td>
         <td class="platforms">
           <a href="https://support.apple.com/128066" target="_blank" rel="noopener">iOS</a>,
@@ -184,6 +214,7 @@
       <tr>
         <td class="cve-id">CVE-2026-43792</td>
         <td><span class="component">Safari</span></td>
+        <td class="cvss"><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-43792" target="_blank" rel="noopener" class="cvss-badge cvss-medium">6.5</a></td>
         <td>An app may be able to access sensitive user data</td>
         <td class="platforms">
           <a href="https://support.apple.com/128067" target="_blank" rel="noopener">macOS</a>,
@@ -193,6 +224,7 @@
       <tr>
         <td class="cve-id">—</td>
         <td><span class="component">Spotlight</span></td>
+        <td class="cvss">—</td>
         <td>Acknowledged for assistance (xattr manipulation outside app sandbox on arbitrary files)</td>
         <td class="platforms">
           <a href="https://support.apple.com/128067" target="_blank" rel="noopener">macOS</a>
