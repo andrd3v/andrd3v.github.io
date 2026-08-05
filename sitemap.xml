@@ -26,11 +26,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://andrd3v.github.io/first-cve/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://andrd3v.github.io/injector/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

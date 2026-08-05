@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/andrei/Documents/andrd3v.github.io rm --cached dcdev)",
+      "Bash(rm -rf /Users/andrei/Documents/andrd3v.github.io/dcdev/.git)"
+    ]
+  }
+}
