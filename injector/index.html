@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="https://github.com/andrd3v.png">
-  <title>Cross-Process Dylib Injection via remote_call — andrd3v</title>
+  <title>Cross-Process Dylib Injection via remote_call | andrd3v</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -246,13 +246,13 @@
       </a>
     </div>
 
-    <div class="tldr"><strong>TL;DR:</strong> Instead of using <code>opainject</code> or injecting shellcode, you can call <code>dlopen</code> directly in a remote process by setting thread registers via <code>thread_set_state</code>. No shellcode, no intermediate libraries &mdash; just a direct function call across process boundaries.</div>
+    <div class="tldr"><strong>TL;DR:</strong> Instead of using <code>opainject</code> or injecting shellcode, you can call <code>dlopen</code> directly in a remote process by setting thread registers via <code>thread_set_state</code>. No shellcode, no intermediate libraries. Just a direct function call across process boundaries.</div>
 
     <h2>Background</h2>
 
-    <p>6 months ago I wrote <a href="https://github.com/andrd3v/remote_call">remote_call</a> &mdash; a way to call any function in a remote process by hijacking thread state on arm64. It suspends a thread, sets <code>x0</code>&ndash;<code>x7</code> for arguments, points <code>PC</code> to the target function, sets <code>LR</code> to the original <code>PC</code> so the thread returns cleanly, and resumes.</p>
+    <p>6 months ago I wrote <a href="https://github.com/andrd3v/remote_call">remote_call</a>, a way to call any function in a remote process by hijacking thread state on arm64. It suspends a thread, sets <code>x0</code>&ndash;<code>x7</code> for arguments, points <code>PC</code> to the target function, sets <code>LR</code> to the original <code>PC</code> so the thread returns cleanly, and resumes.</p>
 
-    <p>Yesterday I told <a href="https://github.com/nkhmelni">@nkhmelni</a> about an idea &mdash; instead of using <code>opainject</code> in my projects (like <a href="https://github.com/andrd3v/titanium">Titanium</a>), I could just call <code>dlopen</code> directly through <code>remote_call</code>. No shellcode, no intermediate libraries, nothing extra. He said he wants to test it out.</p>
+    <p>Yesterday I told <a href="https://github.com/nkhmelni">@nkhmelni</a> about an idea: instead of using <code>opainject</code> in my projects (like <a href="https://github.com/andrd3v/titanium">Titanium</a>), I could just call <code>dlopen</code> directly through <code>remote_call</code>. No shellcode, no intermediate libraries, nothing extra. He said he wants to test it out.</p>
 
     <p>This morning I woke up, opened my mac, wrote a quick example, and it just works.</p>
 
@@ -264,11 +264,11 @@
       <li>Find the target process PID</li>
       <li><code>task_for_pid</code> to get the mach port</li>
       <li>Allocate memory in the remote process and write the dylib path there</li>
-      <li>Get <code>dlopen</code> address (same across all processes &mdash; shared cache)</li>
-      <li><code>remote_call(task, dlopen, path, RTLD_NOW)</code> &mdash; done</li>
+      <li>Get <code>dlopen</code> address (same across all processes due to the shared cache)</li>
+      <li><code>remote_call(task, dlopen, path, RTLD_NOW)</code></li>
     </ol>
 
-    <p>No shellcode needed. <code>remote_call</code> sets registers directly via <code>thread_set_state</code> &mdash; <code>x0</code>/<code>x1</code> for args, <code>PC</code> to <code>dlopen</code>, <code>LR</code> to return. The process continues running after injection like nothing happened.</p>
+    <p>No shellcode needed. <code>remote_call</code> sets registers directly via <code>thread_set_state</code>: <code>x0</code>/<code>x1</code> for args, <code>PC</code> to <code>dlopen</code>, <code>LR</code> to return. The process continues running after injection like nothing happened.</p>
 
     <div class="separator">&bull; &bull; &bull;</div>
 
@@ -342,11 +342,11 @@ cleanup:
     <span class="keyword">return</span> kr;
 }</code></pre>
 
-    <p>The key trick: on arm64, <code>dlopen</code> follows the standard calling convention &mdash; first arg in <code>x0</code>, second in <code>x1</code>, return value in <code>x0</code>. We set <code>LR</code> to the original <code>PC</code>, so when <code>dlopen</code> returns, the thread lands right back where it was. The process doesn't crash, doesn't stall &mdash; it just keeps running with a new dylib loaded.</p>
+    <p>The key trick: on arm64, <code>dlopen</code> follows the standard calling convention. First arg in <code>x0</code>, second in <code>x1</code>, return value in <code>x0</code>. We set <code>LR</code> to the original <code>PC</code>, so when <code>dlopen</code> returns, the thread lands right back where it was. The process doesn't crash, doesn't stall. It just keeps running with a new dylib loaded.</p>
 
     <h2>The injector</h2>
 
-    <p>The main flow ties everything together &mdash; find the process, get its mach port, write the dylib path into its address space, resolve <code>dlopen</code>, and fire:</p>
+    <p>The main flow ties everything together: find the process, get its mach port, write the dylib path into its address space, resolve <code>dlopen</code>, and fire:</p>
 
 <pre><code><span class="directive">#define</span> DYLIB_PATH <span class="string">"/path/to/d.dylib"</span>
 
@@ -384,11 +384,11 @@ cleanup:
     <span class="keyword">return</span> <span class="number">0</span>;
 }</code></pre>
 
-    <p>The <code>dlopen</code> address is the same in every process because of the shared cache &mdash; all processes map <code>dyld_shared_cache</code> at the same slide per boot. So we just resolve it locally with <code>dlsym</code> and use it remotely.</p>
+    <p>The <code>dlopen</code> address is the same in every process because of the shared cache. All processes map <code>dyld_shared_cache</code> at the same slide per boot, so we just resolve it locally with <code>dlsym</code> and use it remotely.</p>
 
     <h2>The dylib</h2>
 
-    <p>The injected dylib is trivial &mdash; a constructor that runs on load:</p>
+    <p>The injected dylib is trivial, just a constructor that runs on load:</p>
 
 <pre><code><span class="directive">#import</span> <span class="string">&lt;Foundation/Foundation.h&gt;</span>
 
@@ -405,10 +405,10 @@ xcrun clang -o inj inj.c -framework CoreFoundation
 xcrun clang -o main main.c
 xcrun clang -dynamiclib -framework Foundation -o d.dylib d.m</code></pre>
 
-<pre><code><span class="comment"># terminal 1 &mdash; start target process</span>
+<pre><code><span class="comment"># terminal 1: start target process</span>
 ./main
 
-<span class="comment"># terminal 2 &mdash; inject</span>
+<span class="comment"># terminal 2: inject</span>
 sudo ./inj</code></pre>
 
     <h2>Output</h2>
@@ -423,7 +423,7 @@ dlopen handle: 0x73418a40</div>
 <div class="output-block"><span class="prompt">$</span> ./main
 2026-06-07 09:05:23.927 main[40421:4870151] <span class="highlight">hello from dylib</span></div>
 
-    <p>The target process prints the dylib's message without ever knowing it loaded anything. No crash, no interruption &mdash; it just continues running. It makes sense that this can be rewritten for iOS.</p>
+    <p>The target process prints the dylib's message without ever knowing it loaded anything. No crash, no interruption. It just continues running. It makes sense that this can be rewritten for iOS.</p>
 
     <h2>Requirements</h2>
 

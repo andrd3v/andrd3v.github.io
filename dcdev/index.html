@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="https://github.com/andrd3v.png">
-  <title>Reverse Engineering Apple's DeviceCheck — andrd3v</title>
+  <title>Reverse Engineering Apple's DeviceCheck | andrd3v</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -246,9 +246,9 @@
 
     <p>The goal is to provide a reproducible, engineering-grade description useful for security engineering, red teaming, and low-level reverse engineering work.</p>
 
-    <h2>Chapter 1 &mdash; DeviceCheck.framework entry point</h2>
+    <h2>Chapter 1: DeviceCheck.framework entry point</h2>
 
-    <p>When creating a token from <code>DCDevice</code>, the method <code>-[DCDevice generateTokenWithCompletionHandler:]</code> is used &mdash; inside it calls <code>DCDeviceMetadataDaemonConnection</code>. This method creates a connection to the iPhone's <code>devicecheckd</code> daemon:</p>
+    <p>When creating a token from <code>DCDevice</code>, the method <code>-[DCDevice generateTokenWithCompletionHandler:]</code> is used. Inside, it calls <code>DCDeviceMetadataDaemonConnection</code>. This method creates a connection to the iPhone's <code>devicecheckd</code> daemon:</p>
 
 <pre><code><span class="type">NSXPCConnection</span> *xpc_connection = (<span class="type">NSXPCConnection</span> *)objc_msgSend(
                               objc_alloc((<span class="type">Class</span>)&amp;OBJC_CLASS___NSXPCConnection),
@@ -273,7 +273,7 @@
 
     <p class="note">I assume that if DCDevice is unavailable on the device, then there will be a different build of the framework where it is hard-coded to 0.</p>
 
-    <p>After checking support, it calls <code>-[DCClientHandler _generateAppIDFromCurrentConnection]</code> &mdash; this method obtains <code>&lt;TeamID&gt;.&lt;BundleIdentifier&gt;</code> (format: <code>ABCDE12345.com.example.myApp</code>) using entitlements (<code>-[NSXPCConnection valueForEntitlement:]</code>), and if that fails, it uses <code>SecTaskCopyTeamIdentifier</code> and <code>SecTaskCopySigningIdentifier</code>.</p>
+    <p>After checking support, it calls <code>-[DCClientHandler _generateAppIDFromCurrentConnection]</code>. This method obtains <code>&lt;TeamID&gt;.&lt;BundleIdentifier&gt;</code> (format: <code>ABCDE12345.com.example.myApp</code>) using entitlements (<code>-[NSXPCConnection valueForEntitlement:]</code>), and if that fails, it uses <code>SecTaskCopyTeamIdentifier</code> and <code>SecTaskCopySigningIdentifier</code>.</p>
 
     <p>If <code>team_id</code> is valid and not <code>"0000000000"</code>, the method combines the <code>team_id</code> and <code>bundle_id</code> with a dot; otherwise it uses only the <code>bundle_id</code>. It returns an appID:</p>
 
@@ -349,15 +349,15 @@ objc_msgSend(DCContext_class, <span class="string">"setClientAppID:"</span>, app
   <span class="keyword">return</span> (<span class="type">id</span> *)dc_device_metadata;
 }</code></pre>
 
-    <p>All classes have been initialized and now the <code>devicecheckd</code> daemon calls <code>generateEncryptedBlobWithCompletion:</code> &mdash; a method that will begin generating the token.</p>
+    <p>All classes have been initialized and now the <code>devicecheckd</code> daemon calls <code>generateEncryptedBlobWithCompletion:</code>, the method that begins generating the token.</p>
 
     <div class="separator">&bull; &bull; &bull;</div>
 
-    <h2>Chapter 2 &mdash; DeviceCheckInternal.framework</h2>
+    <h2>Chapter 2: DeviceCheckInternal.framework</h2>
 
     <p class="note">Almost all methods are rewritten by me to make them easier to read and understand.</p>
 
-    <p>Our daemon invoked the method <code>generateEncryptedBlobWithCompletion:</code> &mdash; this is the start of token creation.</p>
+    <p>Our daemon invoked the method <code>generateEncryptedBlobWithCompletion:</code>. This is the start of token creation.</p>
 
 <pre><code><span class="type">void</span> __cdecl -[DCDDeviceMetadata generateEncryptedBlobWithCompletion:](
     <span class="type">DCDDeviceMetadata</span> *self, <span class="type">SEL</span> a2, <span class="type">id</span> completion_arg)
@@ -494,15 +494,15 @@ objc_msgSend(DCContext_class, <span class="string">"setClientAppID:"</span>, app
 592bbe058a9c0f8edbca2acb67efb774971ca45f7d856a694fb1b9c40
 b94fb2e7a5a9498b0</span></code></pre>
 
-    <p>This is 130 hex characters &mdash; the key itself is 65 bytes. This value is the public key used by DeviceCheck.</p>
+    <p>This is 130 hex characters, meaning the key itself is 65 bytes. This value is the public key used by DeviceCheck.</p>
 
     <div class="separator">&bull; &bull; &bull;</div>
 
-    <h2>Chapter 3 &mdash; Token encryption</h2>
+    <h2>Chapter 3: Token encryption</h2>
 
     <p class="note">Almost all methods are rewritten by me to make them easier to read and understand.</p>
 
-    <p>Returning to <code>fetchOpaqueBlobWithContext:</code> &mdash; after the public key is fetched, a <code>DCCertificateGenerator</code> is initialized:</p>
+    <p>Returning to <code>fetchOpaqueBlobWithContext:</code>. After the public key is fetched, a <code>DCCertificateGenerator</code> is initialized:</p>
 
 <pre><code><span class="keyword">struct</span> <span class="type">DCCertificateGenerator</span> <span class="comment">// sizeof=0x18</span>
 {
@@ -614,11 +614,11 @@ bmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMB4XDTE3MDQyMDAwNDIwMFoXDTMyMDMy
 
     <div class="separator">&bull; &bull; &bull;</div>
 
-    <h2>Chapter 4 &mdash; Conclusion and security implications</h2>
+    <h2>Chapter 4: Conclusion and security implications</h2>
 
     <p>This write-up traces the full DeviceCheck token generation path: from calling <code>DCDevice</code> in an app, through XPC into the <code>devicecheckd</code> daemon, into <code>DeviceCheckInternal.framework</code>, and finally to <code>_encryptData</code>, where the payload is constructed and encrypted.</p>
 
-    <p>Key stages are covered &mdash; initializing the context with <code>TeamID.BundleID</code>, resolving the public key (including the hard-coded fallback), assembling the certificate chain, and forming the opaque blob returned to the caller.</p>
+    <p>Key stages are covered: initializing the context with <code>TeamID.BundleID</code>, resolving the public key (including the hard-coded fallback), assembling the certificate chain, and forming the opaque blob returned to the caller.</p>
 
     <p>From a security and red-team perspective, this analysis provides the primitives needed to reason about DeviceCheck's trust model, to emulate or instrument the client in controlled environments, and to assess how robustly backends validate and interpret DeviceCheck tokens.</p>
 

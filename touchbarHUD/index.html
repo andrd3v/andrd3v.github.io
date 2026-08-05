@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="https://github.com/andrd3v.png">
-  <title>Touch Bar Debug HUD via XPC — andrd3v</title>
+  <title>Touch Bar Debug HUD via XPC | andrd3v</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -231,10 +231,10 @@
       </a>
     </div>
 
-    <p>Lightweight macOS client that flips on the Touch Bar debug HUD by talking to the system XPC service <code>com.apple.accessibility.dfrhud</code>. Any client that knows the protocol can attach and drive the HUD &mdash; no entitlements, no authentication.</p>
+    <p>Lightweight macOS client that flips on the Touch Bar debug HUD by talking to the system XPC service <code>com.apple.accessibility.dfrhud</code>. Any client that knows the protocol can attach and drive the HUD without any entitlements or authentication.</p>
 
     <img src="proof.png" alt="Touch Bar HUD proof of concept" class="proof-img">
-    <p class="img-caption">DFRHUD active &mdash; HUD connection established via XPC</p>
+    <p class="img-caption">DFRHUD active. HUD connection established via XPC</p>
 
     <h2>IDA analysis</h2>
 
@@ -272,7 +272,7 @@
 
     <h2>Proof of concept</h2>
 
-    <p>On launch, the PoC app immediately dials the mach service and calls <code>enableDFRInteractiveHUD</code> + <code>startDFRInteractiveHUD</code>. If the XPC link drops, it retries after 1 second. No UI controls &mdash; fire-and-forget.</p>
+    <p>On launch, the PoC app immediately dials the mach service and calls <code>enableDFRInteractiveHUD</code> + <code>startDFRInteractiveHUD</code>. If the XPC link drops, it retries after 1 second. No UI controls, just fire-and-forget.</p>
 
 <pre><code><span class="type">NSXPCConnection</span> *connection = [[<span class="type">NSXPCConnection</span> alloc]
     initWithMachServiceName:<span class="string">@"com.apple.accessibility.dfrhud"</span>
