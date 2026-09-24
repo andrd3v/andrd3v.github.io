@@ -67,7 +67,7 @@
     tbody tr:hover { background: #f5f5f5; }
 
     .cve-id {
-      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+      font-family: Menlo, Consolas, monospace;
       font-size: 0.85rem;
       font-weight: 600;
       white-space: nowrap;
@@ -150,15 +150,46 @@
       color: #999;
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
       body { padding: 1.5rem 0.75rem; }
       h1 { font-size: 1.3rem; }
-      table { font-size: 0.85rem; }
-      thead th { font-size: 0.7rem; padding: 0.4rem 0.5rem; }
-      tbody td { padding: 0.6rem 0.5rem; }
-      .cve-id { font-size: 0.8rem; }
-      .component { font-size: 0.8rem; }
-      .platforms { font-size: 0.75rem; }
+
+      thead { display: none; }
+
+      tbody tr {
+        display: block;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #eee;
+      }
+
+      tbody tr:hover { background: none; }
+
+      tbody td {
+        display: inline;
+        padding: 0;
+        border: none;
+      }
+
+      .cve-id { font-size: 0.9rem; vertical-align: middle; }
+      .cve-id::after { content: '  '; }
+
+      td:nth-child(2) { vertical-align: middle; }
+      td:nth-child(2)::after { content: '  '; }
+
+      .cvss { display: inline; text-align: left; vertical-align: middle; }
+      .cvss .cvss-badge { vertical-align: middle; }
+
+      td:nth-child(4) {
+        display: block;
+        font-size: 0.85rem;
+        color: #555;
+        margin-top: 0.35rem;
+      }
+
+      td:nth-child(5) {
+        display: block;
+        margin-top: 0.25rem;
+      }
     }
 
     @media (max-width: 380px) {
