@@ -41,6 +41,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://andrd3v.github.io/media/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://andrd3v.github.io/touchbarHUD/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
