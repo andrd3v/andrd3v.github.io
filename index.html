@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="https://github.com/andrd3v.png">
   <title>Ilya Andr (@andrd3v)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -189,7 +190,7 @@
     <div class="profile">
       <img src="https://github.com/andrd3v.png" alt="andrd3v">
       <div class="info">
-        <h1>Ilya Andr <span class="nick">(@andrd3v)</span></h1>
+        <h1>Ilya Andr <span class="nick">(@andrd3v)</span> <span id="gift-anim" style="display:inline-block;width:28px;height:28px;vertical-align:middle;margin-left:4px"></span></h1>
         <span class="quote">_You_think_you_can_just_XPC_into_any_process_all_willy_nilly_well_think_again_</span>
       </div>
     </div>
@@ -293,5 +294,22 @@
   <footer>
     &copy; Ilya Andr
   </footer>
+  <script>
+    var gifts = [
+      'nailbracelet-70.json',
+      'heroichelmet-680.json',
+      'lootbag-11217.json',
+      'plushpepe-2798.json',
+      'scaredcat-11220.json',
+      'vintagecigar-15623.json'
+    ];
+    lottie.loadAnimation({
+      container: document.getElementById('gift-anim'),
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: gifts[Math.floor(Math.random() * gifts.length)]
+    });
+  </script>
 </body>
 </html>
