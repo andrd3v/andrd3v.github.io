@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="https://github.com/andrd3v.png">
-  <title>andrxpc: Intercepting Every XPC Message on macOS | andrd3v</title>
+  <title>axpc: Intercepting Every XPC Message on macOS | andrd3v</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -242,12 +242,12 @@
   <a href="../" class="back">&larr; andrd3v</a>
 
   <article>
-    <h1>andrxpc: Intercepting Every XPC Message on macOS</h1>
+    <h1>axpc: Intercepting Every XPC Message on macOS</h1>
     <div class="meta">
       <time datetime="2026-11-08">November 8, 2026</time> &middot;
       by <a href="https://github.com/andrd3v">andrd3v</a> &middot;
       macOS arm64e &middot;
-      <a href="https://github.com/andrd3v/andrxpc" target="_blank" class="repo-btn">
+      <a href="https://github.com/andrd3v/axpc" target="_blank" class="repo-btn">
         <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         Repository
       </a>
@@ -255,13 +255,13 @@
 
     <div class="tldr"><strong>TL;DR:</strong> A tool that hooks every IPC channel on macOS - XPC, NSXPC, Mach bootstrap, CFMessagePort, distributed notifications - in any running process including sandboxed daemons. Watch the traffic live or let an AI read it through the MCP server.</div>
 
-    <img src="screenshot.png" alt="andrxpc monitoring 14 processes with 23k intercepted XPC messages">
+    <img src="screenshot.png" alt="axpc monitoring 14 processes with 23k intercepted XPC messages">
 
     <h2>Why</h2>
 
     <p>I was reversing some system daemons and needed to see what XPC messages they send and receive. There's no good tool for this on macOS. You can use <code>log stream</code> with predicates but it shows you nothing about the actual message content. Dtrace is painful. LLDB breakpoints on every <code>xpc_connection_send_message</code> get old fast.</p>
 
-    <p>So I built andrxpc. Hook into any process, intercept all IPC, dump everything to a log file.</p>
+    <p>So I built axpc. Hook into any process, intercept all IPC, dump everything to a log file.</p>
 
     <h2>How it works</h2>
 
@@ -299,15 +299,15 @@
 
     <h2>MCP server</h2>
 
-    <p>andrxpc also comes with an MCP server so you can plug it into Claude or any other AI assistant. It exposes five tools: <code>status</code>, <code>logs</code>, <code>log_files</code>, <code>inject</code>, and <code>processes</code>. No dependencies, just python3.</p>
+    <p>axpc also comes with an MCP server so you can plug it into Claude or any other AI assistant. It exposes five tools: <code>status</code>, <code>logs</code>, <code>log_files</code>, <code>inject</code>, and <code>processes</code>. No dependencies, just python3.</p>
 
     <p>Add this to your Claude Code config:</p>
 
 <pre><code>{
   <span class="string">"mcpServers"</span>: {
-    <span class="string">"andrxpc"</span>: {
+    <span class="string">"axpc"</span>: {
       <span class="string">"command"</span>: <span class="string">"python3"</span>,
-      <span class="string">"args"</span>: [<span class="string">"/path/to/andrxpc/mcp/server.py"</span>]
+      <span class="string">"args"</span>: [<span class="string">"/path/to/axpc/mcp/server.py"</span>]
     }
   }
 }</code></pre>
@@ -324,13 +324,13 @@
 
 <pre><code><span class="func">make</span>
 <span class="func">sudo</span> build/injector -d com.apple.accountsd build/xpchook.dylib
-<span class="func">tail</span> -f /tmp/andrxpc/*.xpc.log</code></pre>
+<span class="func">tail</span> -f /tmp/axpc/*.xpc.log</code></pre>
 
     <p>That's it. Inject and read the logs.</p>
 
     <div class="credits">
       <a href="https://github.com/andrd3v">andrd3v</a> &middot;
-      <a href="https://github.com/andrd3v/andrxpc">source code</a>
+      <a href="https://github.com/andrd3v/axpc">source code</a>
     </div>
   </article>
 
